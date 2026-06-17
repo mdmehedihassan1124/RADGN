@@ -85,7 +85,7 @@ class Config:
     n_cv_folds: int = 5             # Justified: standard in cheminformatics
 
     # GNN training — shared across all GNN models
-    gnn_epochs: int = 400           # Unified (fixes C10): 400 epochs for full convergence; Hybrid-RADGN benefits
+    gnn_epochs: int = 400           # Unified : 400 epochs for full convergence; Hybrid-RADGN benefits
     gnn_lr: float = 8e-4            # Justified: standard for AdamW on small datasets
     gnn_batch: int = 128            # Justified: smooth gradients for ~6K graphs
     gnn_patience: int = 40          # Justified: ReduceLROnPlateau patience=12 × ~2.5
@@ -101,11 +101,11 @@ class Config:
     radgn_drop: float = 0.20
 
     # Ablation
-    abl_epochs: int = 120           # hidden=64 is 3x faster/ep; 120ep×(1/3)≈40 full-model ep
-    abl_patience: int = 20          # patience=20/120=17% ceiling — enough for small model
+    abl_epochs: int = 120          
+    abl_patience: int = 20          
 
     # Embed dim search range (fix A3: expanded from [32..128] to [16..256])
-    embed_dims: list = field(default_factory=lambda: [32, 64, 96, 128])  # Req: use these 4 dims
+    embed_dims: list = field(default_factory=lambda: [32, 64, 96, 128]) 
 
     # XGBoost hybrid
     xgb_n_est: int = 1200
@@ -169,7 +169,7 @@ TOL14      = COLORS  # alias used elsewhere
 # Five distinct Paul-Tol fold colours
 FOLD_COLORS = ['#332288', '#CC6677', '#117733', '#882255', '#EE7733']
 
-# ── Journal-quality matplotlib style ─────────────────────────────────────────
+#  matplotlib style ─────────────────────────────────────────
 rcParams.update({
     'font.family':            'serif',
     'font.serif':             ['Times New Roman', 'DejaVu Serif'],
@@ -821,7 +821,7 @@ print(f'{"XGBoost":<12}  {float(np.mean(xgb_cv["mae"])):>8.3f}  '
       f'{float(np.mean(xgb_cv["rmse"])):>9.3f}  '
       f'{mae_xgb:>9.3f}  {r2_xgb:>8.4f}')
 
-# ── GNN Training Utilities (fixes C7, C8, C13) ──────────────────────────────
+# ── GNN Training Utilities) ──────────────────────────────
 def warmup_factor(ep):
     return min(1.0, (ep + 1) / CFG.warmup_epochs)
 
@@ -1802,7 +1802,6 @@ for k, (m, s) in h2e_results.items():
     print(f'  {k}: {m:.3f} +/- {s:.3f}')
 
 # ── PCA Variance Analysis: Why 512D RADGN embeddings need compression ────────
-# RADGN output = 4 × embed_dim = 4 × BEST_EMBED (combinator concatenates 4 reaction views)
 # With BEST_EMBED=128 → 512D; XGBoost generalisation degrades sharply in this regime.
 # PCA to 64D captures ≥98% variance and matches D-MPNN's 96D embedding scale.
 from sklearn.decomposition import PCA as _PCA2
@@ -2213,7 +2212,7 @@ for m in ALL_MODELS:
     print(f'{m+flag:22s} {all_mae_te[m]:7.3f} {all_rmse_te[m]:7.3f} '          f'{all_r2_te[m]:7.4f} {all_rho_te[m]:10.4f} {nrmse:8.3f}')
 print('\n★ = Proposed Hybrid-RADGN  † = Novel D-MPNN+XGB')
 
-# ── Bootstrap 95% CIs on test metrics (fix Q1) ──────────────────────────────
+# ── Bootstrap 95% CIs on test metrics  ──────────────────────────────
 log.info('Computing bootstrap 95% CIs on test metrics...')
 ci_results = []
 for m in ALL_MODELS:
