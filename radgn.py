@@ -1991,7 +1991,7 @@ for _vname, _Xtr, _Xte, _params in _variants:
     log.info(f'  Variant {_vname}: CV MAE={np.mean(_cv_mae):.3f}±{np.std(_cv_mae):.3f}  '
              f'Test MAE={_mae_te:.3f}  R²={_r2_te:.4f}  n_est={_n_est}')
 
-# ── Select best variant by test MAE ──────────────────────────────────────────
+# ── Select best variant by test MAE
 _best_vname = min(_var_results, key=lambda k: _var_results[k]['mae_te'])
 _best = _var_results[_best_vname]
 
@@ -2016,7 +2016,6 @@ log.info(f'\n   Best Hybrid-RADGN variant: {_best_vname}')
 log.info(f'  Hybrid-RADGN MAE={mae_hybrid:.3f}  R²={r2_hybrid:.4f}  ({elapsed_hybrid:.1f}s)')
 BEST_HEAD = 'xgb'
 
-# ── Variant comparison table ──────────────────────────────────────────────────
 print(f'\n{"Variant":<12}  {"Features":>8}D  {"CV MAE":>8}  {"Test MAE":>9}  {"R²":>7}')
 print('-' * 54)
 for _vn, _vr in _var_results.items():
@@ -2205,9 +2204,6 @@ ci_df = pd.DataFrame(ci_results)
 print('Table 3. Test Metrics with 95% Bootstrap Confidence Intervals (n_boot=2000)')
 display(ci_df)
 
-# ── Training Dynamics — Final Journal Style Version ────────────────────────
-# No grid + smaller axis labels + larger tick labels
-
 from matplotlib.ticker import AutoMinorLocator
 
 
@@ -2344,14 +2340,12 @@ for mname, hvar, xlabel in _TC_MODELS:
         right=False
     )
 
-    # ── Grid OFF ────────────────────────────────────────────────────────────
+  
     ax.grid(False)
-
-    # ── Spine Styling ──────────────────────────────────────────────────────
     for spine in ax.spines.values():
         spine.set_linewidth(1.7)
 
-    # ── Compact Legend Inside Figure ───────────────────────────────────────
+
     leg = ax.legend(
         loc='upper right',
         fontsize=8.7,
@@ -2366,10 +2360,9 @@ for mname, hvar, xlabel in _TC_MODELS:
     leg.get_frame().set_edgecolor('black')
     leg.get_frame().set_linewidth(0.9)
 
-    # ── Tight Layout ───────────────────────────────────────────────────────
+
     plt.tight_layout()
 
-    # ── Save Figure ────────────────────────────────────────────────────────
     save_fig(
         fig,
         f'fig{fn:02d}_traincurve_{mname.lower().replace(" ","_").replace("-","_")}.png'
@@ -2379,7 +2372,6 @@ for mname, hvar, xlabel in _TC_MODELS:
 
     print(f'Figure {fn}. Training dynamics — {mname}.')
 
-# ── True vs Predicted — Individual Figure per Model ──────────────────────────
 _lim_lo = float(y_te_g.min()) - 5
 _lim_hi = float(y_te_g.max()) + 5
 for _m in ALL_MODELS:
@@ -2403,8 +2395,7 @@ for _m in ALL_MODELS:
     save_fig(fig, f'fig{fn:02d}_tvp_{_m.lower().replace(" ","_").replace("+","p").replace("-","_")}.png')
     plt.show()
     print(f'Figure {fn}. True vs Predicted — {_m}.')
-
-# ── Error Distributions 
+ 
 from scipy.stats import gaussian_kde as _gkde
 for _m in ALL_MODELS:
     if _m not in all_preds_te:
@@ -2432,7 +2423,6 @@ for _m in ALL_MODELS:
     plt.show()
     print(f'Figure {fn}. Error distribution — {_m}.')
 
-# -- LOHC Per-Window Analysis 
 fn = next_fig()
 _windows = [('< 40', y_te_g < 40), ('40-70 (LOHC)', (y_te_g >= 40) & (y_te_g <= 70)),
             ('> 70', y_te_g > 70)]
@@ -2455,7 +2445,6 @@ print(f'  Windows: <40 (n={int((y_te_g<40).sum())}), '
       f'>70 (n={int((y_te_g>70).sum())})')
 display(_win_df)
 
-# Figure: LOHC-window MAE bar chart
 fig, ax = plt.subplots(figsize=(12, 6))
 _models_ord = _win_df['Model'].tolist()
 _lohc_maes  = [float(_win_df.loc[_win_df['Model']==m, 'MAE 40-70 (LOHC)'].values[0])
@@ -2476,9 +2465,6 @@ plt.show()
 print(f'Figure {fn}. LOHC-window MAE for all models. '
       f'Motivates LOHC-aware loss: models optimised globally vs window-specific.')
 
-# -- One-tailed statistical tests: all hybrid models vs all baselines (C6) --
-# H1 (one-tailed): model_proposed MAE < baseline MAE
-# Holm-Bonferroni correction across all comparisons for each proposed model
 def _boot_perm(ae1, ae2, n_perm=10000, seed=42):
     rng = np.random.RandomState(seed)
     obs = ae1.mean() - ae2.mean()
@@ -2541,9 +2527,6 @@ for _hm in _hybrid_models:
     print(f'\nTable: {_hm} -- one-tailed permutation test vs all baselines (HB corrected)')
     display(_sub[['Baseline','delta_MAE_mean','p_perm(1-tail)',
                    'p_perm_HB','Sig(HB)','Glass_delta']].round(4))
-
-
-# ── SHAP Analysis Setup ──────────────────────────────────────────────────────
 
 import shap as _shap
 
@@ -2656,7 +2639,6 @@ for mname, preds in _hyb_p.items():
 print('\nLOHC Per-Window Performance Table (C5/C22):')
 print(_pd_lw.DataFrame(_rows_lw).to_string(index=False))
 
-# ── Figure: LOHC Per-Window MAE ──────────────────────────────────────────────
 fn  = next_fig()
 fig, ax = plt.subplots(figsize=(11, 7))
 _wnames = list(_wins.keys()); _w = 0.25; _x = np.arange(len(_wnames))
@@ -2680,7 +2662,6 @@ save_fig(fig, f'fig{fn:02d}_lohc_window_mae.png')
 plt.show()
 print(f'Figure {fn}. LOHC per-window MAE.')
 
-# ── Figure: LOHC Per-Window Hit Rate (+-5 kJ/mol) ────────────────────────────
 fn  = next_fig()
 fig, ax = plt.subplots(figsize=(11, 7))
 _wnames = list(_wins.keys()); _w = 0.25; _x = np.arange(len(_wnames))
@@ -2702,7 +2683,6 @@ save_fig(fig, f'fig{fn:02d}_lohc_window_hitrate.png')
 plt.show()
 print(f'Figure {fn}. LOHC per-window hit rate.')
 
-# ── Residual Analysis — Individual: All 3 Hybrid Models ─────────────────────
 _hyb_res = [
     ('Hybrid-GAT',   globals().get('pred_hybrid_gat_te'), COLORS.get('Hybrid-GAT',   '#AA4499')),
     ('D-MPNN+XGB',   globals().get('pred_dmpnn_xgb_te'),  COLORS.get('Hybrid-D-MPNN','#661100')),
@@ -2732,7 +2712,6 @@ for mname, preds, mcol in _hyb_res:
 
 
 
-# ── LC-1: RADGN — Train Loss + Val MAE overlay 
 fn = next_fig()
 fig, ax1 = plt.subplots(figsize=(10, 5))
 ax2 = ax1.twinx()
@@ -2752,8 +2731,7 @@ style_ax(ax1); plt.tight_layout()
 save_fig(fig, f'fig{fn:02d}_RADGN_lc_train_val.png'); plt.show()
 print(f'Figure {fn}. RADGN: train loss (solid) vs val MAE (dashed) — 5 folds.')
 
-# ── LC-2: GNN Baselines — Val MAE per model (median fold highlighted) ────────
-# ONE figure per model: all 5 folds shown, median fold bold
+
 for model_name, hist_list in [("GCN",gcn_hist),("GAT",gat_hist),
                                 ("CGR-GNN",cgrgnn_hist),("D-MPNN",dmpnn_hist),
                                 ("AttentiveFP",attentivefp_hist)]:
@@ -2777,7 +2755,6 @@ for model_name, hist_list in [("GCN",gcn_hist),("GAT",gat_hist),
     save_fig(fig, f'fig{fn:02d}_{model_name.replace("-","_")}_val_mae_lc.png'); plt.show()
     print(f'Figure {fn}. {model_name} val MAE — 5 folds (median bold).')
 
-# ── LC-3: Chemprop D-MPNN+XGB — Val MAE vs XGBoost boosting iteration ────────
 fn = next_fig()
 fig, ax = plt.subplots(figsize=(10, 5))
 for h, fc in zip(dmpnn_xgb_hist, FOLD_COLORS):
@@ -2793,7 +2770,6 @@ style_ax(ax); plt.tight_layout()
 save_fig(fig, f'fig{fn:02d}_DMPNN_XGB_val_mae_lc.png'); plt.show()
 print(f'Figure {fn}. Chemprop D-MPNN+XGB: val MAE vs boosting iteration (5 folds).')
 
-# ── LC-4: Hybrid-RADGN (best variant) — XGBoost val MAE vs boosting iteration ─
 fn = next_fig()
 fig, ax = plt.subplots(figsize=(10, 6))
 _h4 = hybrid_hist if 'hybrid_hist' in dir() else _var_results.get(_best_vname, {}).get('hist', [])
@@ -2924,10 +2900,6 @@ print(
     f'val MAE vs boosting iteration (5 folds).'
 )
 
-
-
-# ── LC-5: All GNN+RADGN Val MAE comparison — one overlay
-
 fn = next_fig()
 fig, ax = plt.subplots(figsize=(11, 6))
 all_lc_models = [("GCN",gcn_hist),("GAT",gat_hist),("CGR-GNN",cgrgnn_hist),
@@ -2946,7 +2918,7 @@ style_ax(ax); plt.tight_layout()
 save_fig(fig, f'fig{fn:02d}_all_gnn_val_mae_comparison.png'); plt.show()
 print(f'Figure {fn}. Val MAE comparison: median fold per GNN model. RADGN bold.')
 
-# ── Test Bar Charts (fix C5: no eval(), fix Q2: CI error bars, fix F18) ──────
+
 metric_configs = [
     ('MAE (kJ mol$^{-1}$)', 'all_mae_te', 'mae'),
     ('RMSE (kJ mol$^{-1}$)', 'all_rmse_te', 'rmse'),
@@ -2986,11 +2958,7 @@ for metric_label, te_key, cv_key in metric_configs:
     plt.show()
     print(f'Figure {fn}. Test {metric_label} for all models. '
           f'Error bars: 95% bootstrap CI. Hatched: proposed model.')
-
-# ── High-quality residual vs predicted scatter plots ─────────────────────────
-
-# High DPI for screen + saved figures
-plt.rcParams['figure.dpi'] = 900
+splt.rcParams['figure.dpi'] = 900
 plt.rcParams['savefig.dpi'] = 900
 
 # ONLY hybrid/proposed models use fixed colors
@@ -3028,7 +2996,7 @@ for m in ALL_MODELS:
             zorder=3
         )
 
-    # ── Original/base models remain unchanged ───────────────────────────────
+    # ── Original/base models  ───────────────────────────────
     else:
 
         sc = ax.scatter(
@@ -3218,7 +3186,7 @@ display(resid_df)
 print('\\nInterpretation: Low |mean bias| confirms unbiased predictions. '
       'Skewness near 0 and kurtosis near 0 (excess) indicates normally distributed residuals.')
 
-# ── Box/Violin plot of 5-fold CV MAE for all models (individual) ─────────────
+# ── Box/Violin plot of 5-fold CV MAE 
 fn = next_fig()
 fig, ax = plt.subplots(figsize=(16, 7))
 cv_data = [all_cv_dict[m]['mae'] for m in ALL_MODELS]
@@ -3245,7 +3213,7 @@ plt.tight_layout()
 save_fig(fig, f'fig{fn:02d}_cv_mae_boxplot.png')
 plt.show()
 print(f'Figure {fn}. Box plots of 5-fold CV MAE for all 15 models. '
-      f'Individual fold values overlaid as points. ★ Hybrid-RADGN (hatched).')
+      f'Individual fold values overlaid as points.  Hybrid-RADGN (hatched).')
 
 # ── Box plot of 5-fold CV R² for all models ──────────────────────────────────
 fn = next_fig()
@@ -3289,7 +3257,7 @@ for metric_name in ['mae', 'rmse', 'r2', 'rho']:
         print(f'{m+flag:22s}{fold_str}    {np.mean(vals):.4f}±{np.std(vals):.4f}')
     print()
 
-# ── Improvement Table — Proposed Models vs Baselines ─────────────────────────
+# ── Improvement Table — Proposed Models vs Baselines 
 proposed = {'RADGN', 'Hybrid-RADGN', 'D-MPNN+XGB'}
 for prop_m in ['Hybrid-RADGN', 'RADGN', 'D-MPNN+XGB']:
     if prop_m not in all_mae_te: continue
@@ -3309,7 +3277,7 @@ for prop_m in ['Hybrid-RADGN', 'RADGN', 'D-MPNN+XGB']:
     display(df_imp.drop(columns=['_raw']))
     print(f'{prop_m} MAE={prop_mae:.3f}. Range: {min_i:+.1f}% to {max_i:+.1f}%')
 
-# ── Test MAE Ranking Radar / Horizontal Bar (model comparison summary) ───────
+# ── Test MAE Ranking Radar / Horizontal Bar
 fn = next_fig()
 fig, ax = plt.subplots(figsize=(14, 8))
 sorted_models = sorted(ALL_MODELS, key=lambda m: all_mae_te[m])
@@ -3335,7 +3303,7 @@ plt.show()
 print(f'Figure {fn}. Model ranking by test MAE (ascending). '
       f'★ Hybrid-RADGN achieves best performance.')
 
-# ── Cumulative Error Distribution (all models overlay) ───────────────────────
+# Cumulative Error Distribution 
 fn = next_fig()
 fig, ax = plt.subplots(figsize=(10, 7))
 for m in ALL_MODELS:
@@ -3359,7 +3327,7 @@ print(f'Figure {fn}. Cumulative absolute error distribution for all models. '
       f'Steeper curves (more samples at low error) indicate better models. '
       f'Hybrid-RADGN (thick line) dominates across the entire error range.')
 
-# ── Early Stopping Epoch Distribution (GNN models) ──────────────────────────
+# Early Stopping Epoch Distribution (GNN models)
 fn = next_fig()
 fig, ax = plt.subplots(figsize=(10, 6))
 gnn_stop_data = {}
@@ -3392,8 +3360,7 @@ plt.show()
 print(f'Figure {fn}. Early stopping epoch distribution across 5 folds for GNN models. '
       f'Max allowed: {CFG.gnn_epochs} epochs, patience={CFG.gnn_patience}.')
 
-# ── Final Comprehensive Impact Table ───────────────────────────────────────────
-# One consolidated table summarising every metric for Hybrid-RADGN vs all baselines.
+#  Final Comprehensive Impact Table 
 best_baseline_mae = min(all_mae_te[m] for m in ALL_MODELS if m != 'Hybrid-RADGN')
 best_baseline_name = min((m for m in ALL_MODELS if m != 'Hybrid-RADGN'), key=lambda m: all_mae_te[m])
 hyb_mae  = all_mae_te['Hybrid-RADGN']
@@ -3446,9 +3413,7 @@ print(f'Improvement over best baseline: {100*(best_baseline_mae-hyb_mae)/best_ba
 print(f'5-Fold CV MAE = {hyb_cv_mae:.4f} ± {hyb_cv_std:.4f} kJ/mol  (CV% = {100*hyb_cv_std/hyb_cv_mae:.2f}%)')
 
 # ── Statistical Significance Tests — Bootstrap Permutation + Paired t-test ─────
-# PROPOSED MODELS: RADGN (★), Hybrid-RADGN (★), D-MPNN+XGB (†)
-# TEST: one-tailed (H₁: Hybrid-RADGN MAE < baseline MAE)
-# CORRECTION: Holm-Bonferroni across all comparisons
+
 from scipy.stats import ttest_rel
 
 n_test_stat = len(y_te_g)
@@ -3507,8 +3472,6 @@ for bsl in baselines_stat:
         'Glass_Δ': g_delta,
     })
     log.info(f'  vs {bsl:22s}: ΔMAE={diff.mean():+.3f} | p_perm={p_perm:.4f} | t={t_stat:.3f} | p_t={p_ttest:.4f}')
-
-# Holm-Bonferroni correction on permutation p-values
 sorted_idx = np.argsort(raw_pvals)
 corrected  = np.ones(n_comp)
 for rank, idx in enumerate(sorted_idx):
@@ -3525,7 +3488,7 @@ print(f'(One-tailed: H₁ = Hybrid-RADGN MAE < baseline; n_test={n_test_stat})')
 print(f'Holm-Bonferroni correction across {n_comp} comparisons')
 display(stat_df.round(4))
 
-# ── Significance bar chart ────────────────────────────────────────────────────
+# ── Significance bar chart
 fn = next_fig()
 fig, ax = plt.subplots(figsize=(14, 5))
 xs_st = np.arange(len(stat_results))
@@ -3551,7 +3514,6 @@ plt.show()
 print(f'\nFigure {fn}. One-tailed significance: Hybrid-RADGN vs all baselines (★=p<0.05, ★★=p<0.01, ★★★=p<0.001).')
 print(f'H₁ (one-tailed): Hybrid-RADGN MAE < baseline MAE')
 
-# ── LOHC-window specific metrics (fix Q5) ───────────────────────────────────
 lohc_mask_te = (y_te_g >= 40) & (y_te_g <= 70)
 n_lohc = lohc_mask_te.sum()
 log.info(f'LOHC-window test molecules: {n_lohc}')
@@ -3684,7 +3646,6 @@ plt.show()
 if 'train_single_gnn' not in dir() or 'folds_gnn' not in dir() or 'train_graphs_u' not in dir() or 'y_tr_g' not in dir():
     raise RuntimeError('train_single_gnn/folds_gnn/train_graphs_u/y_tr_g not defined — run all cells from the top: Runtime > Run all (Ctrl+F9)')
 
-# -- Multi-Seed Evaluation (C7): seeds 42, 123, 7 ----------------------------
 _SEEDS_C7 = [42, 123, 7]
 _ms_res = {'RADGN': [], 'Hybrid-RADGN': [], 'D-MPNN': []}
 log.info(f'=== Multi-Seed Evaluation (C7): seeds {_SEEDS_C7} ===')
@@ -3795,12 +3756,6 @@ style_ax(ax, minor=False)
 plt.tight_layout()
 save_fig(fig, f'fig{fn:02d}_multi_seed_eval.png')
 plt.show()
-
-# ═══════════════════════════════════════════════════════════════════════════════
-# EXPORT: All Figure Data → Individual CSV files (for Origin Pro)
-# Layout: col1 = X axis, remaining cols = Y series — import directly.
-# One failure never stops the rest — each section wrapped in try/except.
-# ═══════════════════════════════════════════════════════════════════════════════
 import os, zipfile
 import pandas as pd
 import numpy as np
@@ -3872,7 +3827,7 @@ except Exception as _e:
     _errs.append(f'fig02:{_e}'); print(f'  ERROR: {_e}')
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Fig03  Train / Test Split dH  (same as fig01, shown as stacked histogram)
+# Fig03  Train / Test Split dH 
 # ─────────────────────────────────────────────────────────────────────────────
 _sec('Fig03 Train/Test Split dH')
 try:
@@ -3886,7 +3841,7 @@ except Exception as _e:
     _errs.append(f'fig03:{_e}'); print(f'  ERROR: {_e}')
 
 # ─────────────────────────────────────────────────────────────────────────────
-# True vs Predicted — one CSV per model
+# True vs Predicted 
 # X = actual_kJmol   Y = predicted_kJmol
 # ─────────────────────────────────────────────────────────────────────────────
 _sec('True vs Predicted (per model)')
@@ -3907,7 +3862,6 @@ except Exception as _e:
     _errs.append(f'tvp:{_e}'); print(f'  ERROR: {_e}')
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Residual Scatter — one CSV per model
 # X = predicted_kJmol   Y = residual_kJmol
 # ─────────────────────────────────────────────────────────────────────────────
 _sec('Residual vs Predicted scatter (per model)')
@@ -3927,9 +3881,7 @@ except Exception as _e:
     _errs.append(f'rescat:{_e}'); print(f'  ERROR: {_e}')
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Error Distribution  — |error| histogram  (one file, all models)
-# X = abs_error_bin_kJmol   Y = count per model
-# ALSO per-model raw sorted values for KDE
+# Error Distribution  — |error| histogram 
 # ─────────────────────────────────────────────────────────────────────────────
 _sec('Error Distribution (histogram + KDE data)')
 try:
@@ -3977,7 +3929,7 @@ except Exception as _e:
 
 # ─────────────────────────────────────────────────────────────────────────────
 # CV Metrics per fold — box-plot data
-# X = model   Y = fold1 … fold5  (each metric separate file)
+# X = model   Y = fold1 … fold5 
 # ─────────────────────────────────────────────────────────────────────────────
 _sec('CV Metrics per fold (box plot data)')
 try:
@@ -4056,9 +4008,7 @@ for _hk, _hfile, _xcol in [
         _errs.append(f'{_hk}:{_e}'); print(f'  ERROR {_hk}: {_e}')
 
 # ─────────────────────────────────────────────────────────────────────────────
-# GNN Learning Curves — epoch vs val MAE  (one CSV per model, mean±std included)
-# X = epoch   Y = fold1_val, fold2_val, ... fold5_val, mean_val, std_val
-#              + fold1_train … if train_mae exists
+# GNN Learning Curves — epoch vs val MAE 
 # ─────────────────────────────────────────────────────────────────────────────
 _sec('GNN Learning Curves (epoch vs MAE, per model)')
 
@@ -4311,8 +4261,6 @@ except Exception as _e:
 
 # ─────────────────────────────────────────────────────────────────────────────
 # SHAP Values
-# X = feature   Y = mean_abs_SHAP  (importance)
-# Raw values also saved: rows=samples, cols=features
 # ─────────────────────────────────────────────────────────────────────────────
 _sec('SHAP Values')
 try:
@@ -4353,7 +4301,7 @@ except Exception as _e:
 
 # ─────────────────────────────────────────────────────────────────────────────
 # CV vs Test MAE scatter
-# X = cv_mae_mean   Y = test_mae  (one row per model, label column)
+# X = cv_mae_mean   Y = test_mae  
 # ─────────────────────────────────────────────────────────────────────────────
 _sec('CV vs Test MAE scatter')
 try:
@@ -4373,7 +4321,7 @@ except Exception as _e:
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Multi-Seed Evaluation
-# X = seed   Y = MAE per model (or long-form with model column)
+# X = seed   Y = MAE per model 
 # ─────────────────────────────────────────────────────────────────────────────
 _sec('Multi-Seed Evaluation')
 try:
@@ -4434,12 +4382,6 @@ try:
 except Exception as _ze:
     print(f'Zip/download error: {_ze}')
 
-# ═══════════════════════════════════════════════════════════════════════════════
-# EXPORT: All Figure Data → Individual CSV files (for Origin Pro)
-# col1 = X axis, remaining cols = Y series — import directly.
-# Learning curves: *_full.csv (all epochs) + *_trimmed.csv (clean for figures).
-# One failure never stops the rest — each section wrapped in try/except.
-# ═══════════════════════════════════════════════════════════════════════════════
 import os, zipfile
 import pandas as pd
 import numpy as np
@@ -4711,8 +4653,6 @@ for _hk, _hfile, _xcol in [
 
 # ─────────────────────────────────────────────────────────────────────────────
 # GNN Learning Curves — epoch vs val MAE
-# Exports: *_full.csv (all epochs) + *_trimmed.csv (clean for Origin Pro)
-# X=epoch  Y=fold1_val..fold5_val  mean_val_mae  std_val_mae
 # ─────────────────────────────────────────────────────────────────────────────
 _sec('GNN Learning Curves (epoch vs MAE — full + trimmed per model)')
 
@@ -4832,7 +4772,7 @@ except Exception as _e:
     _errs.append(f'early_stop:{_e}'); print(f'  ERROR: {_e}')
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Hybrid-RADGN Variant XGB Curves (full + trimmed)
+# Hybrid-RADGN Variant XGB Curves 
 # ─────────────────────────────────────────────────────────────────────────────
 _sec('Hybrid-RADGN Variant XGB Curves (full + trimmed)')
 try:
@@ -4869,7 +4809,7 @@ except Exception as _e:
     _errs.append(f'hrad_var:{_e}'); print(f'  ERROR: {_e}')
 
 # ─────────────────────────────────────────────────────────────────────────────
-# D-MPNN+XGB XGB Curves (full + trimmed)
+# D-MPNN+XGB XGB Curves 
 # ─────────────────────────────────────────────────────────────────────────────
 _sec('D-MPNN+XGB XGB Curves (full + trimmed)')
 try:
@@ -4894,7 +4834,7 @@ except Exception as _e:
     _errs.append(f'dmpnn_xgb:{_e}'); print(f'  ERROR: {_e}')
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Hybrid-GAT XGB Curves (full + trimmed)
+# Hybrid-GAT XGB Curves 
 # ─────────────────────────────────────────────────────────────────────────────
 _sec('Hybrid-GAT XGB Curves (full + trimmed)')
 try:
