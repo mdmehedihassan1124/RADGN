@@ -37,7 +37,7 @@ from dataclasses import dataclass, field
 
 warnings.filterwarnings('ignore')
 
-# ── Deterministic configuration (fixes R4, R5, C7) ──────────────────────────
+
 SEED = 42
 random.seed(SEED)
 np.random.seed(SEED)
@@ -55,7 +55,6 @@ def worker_init_fn(worker_id):
     np.random.seed(SEED + worker_id)
     random.seed(SEED + worker_id)
 
-# ── Logging (fixes C9) ──────────────────────────────────────────────────────
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s | %(levelname)s | %(message)s',
@@ -73,8 +72,8 @@ class Config:
 
     # General
     seed: int = 42
-    test_fraction: float = 0.20     # Justified: standard 80/20 split
-    n_cv_folds: int = 5             # Justified: standard in cheminformatics
+    test_fraction: float = 0.20    
+    n_cv_folds: int = 5            
 
     # GNN training — shared across all GNN models
     gnn_epochs: int = 400           
@@ -96,7 +95,6 @@ class Config:
     abl_epochs: int = 120          
     abl_patience: int = 20          
 
-    # Embed dim search range (fix A3: expanded from [32..128] to [16..256])
     embed_dims: list = field(default_factory=lambda: [32, 64, 96, 128]) 
 
     # XGBoost hybrid
@@ -124,7 +122,7 @@ _XGB_DEVICE = 'cuda' if _torch.cuda.is_available() else 'cpu'
 def xgb_params_base(**kwargs):
     """Return a base XGBoost parameter dict with correct device and seed."""
     base = dict(
-        tree_method = 'hist',    # histogram algorithm (CPU and GPU)
+        tree_method = 'hist',   
         device      = _XGB_DEVICE,
         n_jobs      = -1,
         random_state= SEED,
@@ -156,11 +154,8 @@ COLORS = {
 }
 ALL_MODELS = list(COLORS.keys())
 TOL14      = COLORS  # alias used elsewhere
-
-# Five distinct Paul-Tol fold colours
 FOLD_COLORS = ['#332288', '#CC6677', '#117733', '#882255', '#EE7733']
 
-#  matplotlib style ─────────────────────────────────────────
 rcParams.update({
     'font.family':            'serif',
     'font.serif':             ['Times New Roman', 'DejaVu Serif'],
@@ -171,8 +166,8 @@ rcParams.update({
     'ytick.labelsize':        22,
     'legend.fontsize':        20,
     'legend.title_fontsize':  20,
-    'figure.dpi':             300,   # screen
-    'savefig.dpi':            900,   # saved files
+    'figure.dpi':             300,  
+    'savefig.dpi':            900,  
     'axes.linewidth':         2.0,
     'xtick.major.width':      1.2,  'ytick.major.width':  1.2,
     'xtick.major.size':       4.0,  'ytick.major.size':   4.0,
@@ -212,8 +207,6 @@ def save_fig(fig, fname, dpi=900):
 
 log.info('Colour palette, rcParams and figure helpers initialised.')
 
-# ── Utility Functions ────────────────────────────────────────────────────────
-
 def eval_metrics(y_true, y_pred):
     '''Compute MAE, RMSE, R², Spearman ρ (fix E4: Spearman instead of Pearson).'''
     mae = mean_absolute_error(y_true, y_pred)
@@ -251,7 +244,7 @@ METRIC_DICTS = {}  # Populated after model training
 
 log.info('Utility functions defined')
 
-# ── Data Loading  ─────────────────────────────────
+# ── Data Loading 
 df_raw = pd.read_csv("QM9_G4MP2_all.csv")
 n_raw = len(df_raw)
 log.info(f'Raw dataset: {n_raw} rows, columns: {list(df_raw.columns)}')
@@ -302,7 +295,7 @@ log.info(f'ΔH μ±σ: {df["delta_H"].mean():.2f} ± {df["delta_H"].std():.2f} k
 log.info(f'LOHC window (40–70 kJ/mol): {lohc_mask.sum()} ({100*lohc_mask.mean():.1f}%)')
 display(df.describe())
 
-# ── Table 1: Dataset Statistics ──────────────────────────────────────────────
+# ── Table 1: Dataset Statistics 
 def _safe_mean(col):
     return f'{df[col].mean():.3f}' if col in df.columns else 'N/A'
 
@@ -348,7 +341,7 @@ print(f"D'Agostino–Pearson test: K² = {dp_stat:.3f}, p = {dp_p:.2e}")
 print(f"→ ΔH distribution is {'non-normal' if sw_p < 0.05 else 'normal'} at α = 0.05.")
 print(f"  Implication: non-parametric tests preferred for model comparison.")
 
-# ── Outlier Detection using IQR method 
+#  Outlier Detection using IQR method 
 Q1, Q3 = np.percentile(dH, [25, 75])
 IQR = Q3 - Q1
 lower_fence = Q1 - 1.5 * IQR
@@ -411,9 +404,6 @@ d_df = pd.DataFrame({
 
 orig_feat_cols = [c for c in df.columns if c not in ['unsat_SMILE', 'sat_SMILE', 'delta_H']]
 combined_raw = pd.concat([df[orig_feat_cols], u_df, s_df, d_df, df['delta_H']], axis=1)
-
-# Capture valid_idx BEFORE reset_index so df.loc[valid_idx] selects the
-# correct original rows, not just the first n rows of df.
 n_before_drop = len(combined_raw)
 combined = combined_raw.dropna()          # original index intact here
 valid_idx = combined.index.tolist()       # ← original row positions in df
@@ -484,7 +474,8 @@ display(pd.DataFrame(rows))
 if 'CFG' not in dir() or 'SEED' not in dir() or 'df_feat' not in dir():
     raise RuntimeError('CFG/SEED/df_feat not defined. Run all cells from the top: Runtime > Run all (Ctrl+F9)')
 
-# ── Scaffold Split  ────────────────────────────────────────
+# Scaffold Split  
+
 def get_scaffold(smi):
     '''Compute Murcko scaffold with proper error handling (fix C4).'''
     mol = Chem.MolFromSmiles(smi)
@@ -523,15 +514,10 @@ X_delta_tr, X_delta_te = X_delta[train_idx], X_delta[test_idx]
 X_ecfp_tr, X_ecfp_te = X_ecfp[train_idx], X_ecfp[test_idx]
 smiles_te = df_feat['unsat_SMILE'].iloc[test_idx].values
 
-# ── Scaffold-aware CV folds for ML models ────────────────────────────────────
-# GroupKFold on scaffold labels prevents the same scaffold from appearing in
-# both the train and validation fold — matching the train / test split logic.
-# This eliminates the CV-vs-test gap caused by scaffold-similarity leakage.
+# ── Scaffold-aware CV folds for ML models 
 scaffold_groups_tr = np.array([scaffolds[i] for i in train_idx])
 gkf_ml = GroupKFold(n_splits=CFG.n_cv_folds)
 folds = list(gkf_ml.split(X_tr, y_tr, groups=scaffold_groups_tr))
-
-# ASSERT zero scaffold overlap (fix V1)
 train_scaffolds = set(scaffolds[i] for i in train_idx)
 test_scaffolds = set(scaffolds[i] for i in test_idx)
 overlap = train_scaffolds & test_scaffolds
@@ -552,7 +538,6 @@ log.info(f'CV: scaffold-aware GroupKFold (5 folds) — consistent with train/tes
 print(f'KS test: D = {ks_stat:.4f}, p = {ks_p:.4f}')
 print(f'Train: {len(train_idx)} | Test: {len(test_idx)} | Scaffold overlap: 0')
 
-# -- Graph Construction: 14D one-hot node features (Reviewer C8 fix) -----------
 from rdkit.Chem import rdchem as _rc
 _HYB = [_rc.HybridizationType.SP,  _rc.HybridizationType.SP2,
         _rc.HybridizationType.SP3, _rc.HybridizationType.SP3D]
@@ -702,16 +687,12 @@ y_tr_g = np.array([y[i] for i in train_g])
 y_te_g = np.array([y[i] for i in test_g])
 X_delta_tr_g = np.array([X_delta[i] for i in train_g])
 X_delta_te_g = np.array([X_delta[i] for i in test_g])
-
-# Standardise Δ-descriptors
 sc_delta = StandardScaler()
 Xd_tr = sc_delta.fit_transform(X_delta_tr_g)
 Xd_te = sc_delta.transform(X_delta_te_g)
 
 log.info(f'Build: {time.time()-t0:.1f}s | Graphs: train={len(train_g)}, test={len(test_g)}')
 log.info(f'y_tr_g: [{y_tr_g.min():.2f}, {y_tr_g.max():.2f}] | Using raw ΔH (no z-normalisation)')
-
-# ── Scaffold-aware CV folds for GNN models ───────────────────────────────────
 # Fold indices are POSITIONAL into train_g (0 … len(train_g)−1), so they map
 # directly onto train_graphs_u / train_graphs_s / train_graphs_cgr.
 scaffold_groups_gnn = np.array([scaffolds[i] for i in train_g])
@@ -719,8 +700,6 @@ gkf_gnn = GroupKFold(n_splits=CFG.n_cv_folds)
 folds_gnn = list(gkf_gnn.split(np.arange(len(train_g)), groups=scaffold_groups_gnn))
 log.info(f'Scaffold-aware GNN folds: {len(folds_gnn)} folds '
          f'(sizes: {[len(v) for _, v in folds_gnn]} val molecules)')
-
-# ── ML Cross-Validation Helper ───────────────────────────────────────────────
 def run_ml_cv(model_fn, X_, y_, folds_, scaler=True, **kw):
     '''Run k-fold CV for a scikit-learn model.'''
     cv = {'mae': [], 'rmse': [], 'r2': [], 'rho': []}
@@ -749,7 +728,7 @@ log.info('ML CV helper defined. DummyMean / ECFP-Ridge / Δ-Desc XGB removed fro
 if 'X_tr' not in dir() or 'y_tr' not in dir() or 'folds' not in dir() or 'SEED' not in dir():
     raise RuntimeError('X_tr/y_tr/folds/SEED not defined — run all cells from the top: Runtime > Run all (Ctrl+F9)')
 
-# ── Ridge, RF, XGBoost ──────────────────────────────────────────────────────
+# Ridge, RF, XGBoost
 log.info('=== Ridge ===')
 t0 = time.time()
 ridge_cv = run_ml_cv(Ridge, X_tr, y_tr, folds, scaler=True, alpha=10.0)
@@ -811,7 +790,7 @@ print(f'{"XGBoost":<12}  {float(np.mean(xgb_cv["mae"])):>8.3f}  '
       f'{float(np.mean(xgb_cv["rmse"])):>9.3f}  '
       f'{mae_xgb:>9.3f}  {r2_xgb:>8.4f}')
 
-# ── GNN Training Utilities) ──────────────────────────────
+# ── GNN Training Utilities)
 def warmup_factor(ep):
     return min(1.0, (ep + 1) / CFG.warmup_epochs)
 
@@ -995,7 +974,7 @@ def train_single_gnn(ModelClass, train_gl, test_gl, y_tr_g_, y_te_g_,
 
 log.info('GNN training utilities defined.')
 
-# ── GNN Model Classes ────────────────────────────────────────────────────────
+# ── GNN Model Classes
 class GCN(nn.Module):
     def __init__(self, node_dim=14, hidden=96, embed=64, drop=0.25):
         super().__init__()
@@ -1123,19 +1102,17 @@ log.info('All GNN classes defined: GCN, GAT, CGR_GNN, DMPNN, AttentiveFP')
 if 'train_single_gnn' not in dir() or 'folds_gnn' not in dir() or 'train_graphs_u' not in dir() or 'y_tr_g' not in dir():
     raise RuntimeError('train_single_gnn/folds_gnn/train_graphs_u/y_tr_g not defined — run all cells from the top: Runtime > Run all (Ctrl+F9)')
 
-# ── Train GCN ────────────────────────────────────────────────────────────────
+#Train GCN
 log.info('=== GCN ===')
 gcn_cv, gcn_hist, pred_gcn_te, mae_gcn, rmse_gcn, r2_gcn, gcn_model, elapsed_gcn = \
     train_single_gnn(GCN, train_graphs_u, test_graphs_u, y_tr_g, y_te_g,
                      model_name='GCN', cv_folds=folds_gnn,
                      hidden=96, embed=64, drop=0.25)
 print(f'GCN: Test MAE={mae_gcn:.3f}  RMSE={rmse_gcn:.3f}  R²={r2_gcn:.4f}')
-
-# Guard: run all cells from the top first (Runtime > Run all)
 if 'train_single_gnn' not in dir() or 'folds_gnn' not in dir() or 'train_graphs_u' not in dir() or 'y_tr_g' not in dir():
     raise RuntimeError('train_single_gnn/folds_gnn/train_graphs_u/y_tr_g not defined — run all cells from the top: Runtime > Run all (Ctrl+F9)')
 
-# ── Train GAT ────────────────────────────────────────────────────────────────
+# Train GAT
 log.info('=== GAT ===')
 gat_cv, gat_hist, pred_gat_te, mae_gat, rmse_gat, r2_gat, gat_model, elapsed_gat = \
     train_single_gnn(GAT, train_graphs_u, test_graphs_u, y_tr_g, y_te_g,
@@ -1147,7 +1124,7 @@ print(f'GAT: Test MAE={mae_gat:.3f}  RMSE={rmse_gat:.3f}  R²={r2_gat:.4f}')
 if 'train_single_gnn' not in dir() or 'folds_gnn' not in dir() or 'train_graphs_u' not in dir() or 'y_tr_g' not in dir():
     raise RuntimeError('train_single_gnn/folds_gnn/train_graphs_u/y_tr_g not defined — run all cells from the top: Runtime > Run all (Ctrl+F9)')
 
-# ── Train CGR-GNN ────────────────────────────────────────────────────────────
+#Train CGR-GNN 
 log.info('=== CGR-GNN ===')
 cgrgnn_cv, cgrgnn_hist, pred_cgrgnn_te, mae_cgrgnn, rmse_cgrgnn, r2_cgrgnn, \
     cgrgnn_model, elapsed_cgrgnn = \
@@ -1237,7 +1214,7 @@ log.info(f'GCN-XGB (GCN emb+Δ):  MAE={mae_gb:.3f} R²={r2_gb:.4f}')
 if torch.cuda.is_available():
     torch.cuda.empty_cache()
 
-# -- Hybrid-GAT training (C2 baseline) ---------------------------------------
+# -- Hybrid-GAT training (C2 baseline) 
 log.info('=== Hybrid-GAT (C2) ===')
 t0 = time.time()
 
