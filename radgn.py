@@ -44,8 +44,8 @@ np.random.seed(SEED)
 torch.manual_seed(SEED)
 if torch.cuda.is_available():
     torch.cuda.manual_seed_all(SEED)
-    torch.backends.cudnn.deterministic = True   # Fix R4
-    torch.backends.cudnn.benchmark = False       # Fix R4
+    torch.backends.cudnn.deterministic = True   
+    torch.backends.cudnn.benchmark = False       
 DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 # Seeded generator for DataLoaders (fixes C7, R5)
@@ -114,7 +114,7 @@ CFG = Config()
 log.info(f'Config: epochs={CFG.gnn_epochs}, lr={CFG.gnn_lr}, batch={CFG.gnn_batch}')
 log.info(f'Embed search range: {CFG.embed_dims}')
 
-# ── XGBoost GPU/CPU helper ────────────────────────────────────────────────────
+#  XGBoost GPU/CPU helper
 import torch as _torch
 
 _XGB_DEVICE = 'cuda' if _torch.cuda.is_available() else 'cpu'
